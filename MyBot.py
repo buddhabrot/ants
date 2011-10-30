@@ -5,44 +5,57 @@ from ants import *
 # the Ants.run method will parse and update bot input
 # it will also run the do_turn method for us
 class MyBot:
-    def __init__(self):
-        # define class level variables, will be remembered between turns
-        pass
+	closest_unseens = []
+	furthest_unseens = []
+	food_locs = []
+
+	def __init__(self):
+		pass
     
-    # do_setup is run once at the start of the game
-    # after the bot has received the game settings
-    # the ants class is created and setup by the Ants.run method
-    def do_setup(self, ants):
-        # initialize data structures after learning the game settings
-        pass
+	def do_setup(self, ants):
+		pass
+	
+	def update_cartography(self, ants):
+		#changed food_locs
+		for food_loc in self.food_locs:
+			food_row, food_col = food_loc
+			if ants.map[food_row][food_col] != FOOD:
+				self.food_locs.remove(food_loc)
+
+		#new food locs
+		for food_loc in ants.food():
+			if food_loc not in self.food_locs:
+				self.food_locs.append(food_loc)
     
-    # do turn is run once per turn
-    # the ants class has the game state and is updated by the Ants.run method
-    # it also has several helper methods to use
-    def do_turn(self, ants):
+	def do_turn(self, ants):
 		orders = {}
 		targets = {}
 		ant_dist = []
 		
-		#occupy so no order goes here
+		#update map
+		self.update_cartography(ants)
+
+		#occupy so no order ever goes here
 		for hill_loc in ants.my_hills():
 			targets[hill_loc] = hill_loc
 
 		def do_move_direction(loc, direction):
 			new_loc = ants.destination(loc, direction)
-			if (ants.unoccupied(new_loc) and not new_loc in targets.values()):
+			if (ants.unoccupied(new_loc) and ants.passable(new_loc) and 
+				not new_loc in targets.values()):
 				return new_loc
 			else:
 				return False
 	
 		def do_move_location(ant_loc, dst_loc):
 			for direction in ants.direction(ant_loc, dst_loc):
-				if do_move_direction(ant_loc, direction):
-					return direction
-				return False
+				new_loc = do_move_direction(ant_loc, direction)
+				if new_loc:
+					return (new_loc, direction)
+				return (False, False)
 
 		#gather food
-		for food_loc in ants.food():
+		for food_loc in self.food_locs:
 			for ant_loc in ants.my_ants():
 				if ants.time_remaining() < 10:
 					return
@@ -53,13 +66,16 @@ class MyBot:
 		ant_dist.sort()
 		for dist, ant_loc, food_loc in ant_dist:
 			if (not food_loc in targets.values() and not ant_loc in orders):
-				direction = do_move_location(ant_loc, food_loc)
+				new_loc, direction = do_move_location(ant_loc, food_loc)
 				if direction:
 					orders[ant_loc] = direction
-					targets[ant_loc] = food_loc
+					targets[ant_loc] = new_loc
 					ants.issue_order((ant_loc, direction))
 
-		#explore
+		#explore (scout)
+		
+
+		#explore (terrain)
 		
 				
 		#free hill
